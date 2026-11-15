@@ -1,0 +1,36 @@
+name: hengxu-erp
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hengxu}
+      POSTGRES_USER: ${POSTGRES_USER:-hengxu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  erp:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hengxu}
+      POSTGRES_USER: ${POSTGRES_USER:-hengxu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_HOST: db
+      ERP_DEMO_PASSWORD: ${ERP_DEMO_PASSWORD:-}
+      ERP_REQUESTS_PER_MINUTE: ${ERP_REQUESTS_PER_MINUTE:-240}
+    ports:
+      - "127.0.0.1:${ERP_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8000/api/v1/health', timeout=2).read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+volumes:
+  postgres_data:

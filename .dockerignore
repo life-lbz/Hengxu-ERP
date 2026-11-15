@@ -1,0 +1,11 @@
+.git
+.env
+.venv
+.npm-cache
+.verification
+.test-run-*
+pytest-cache-files-*
+**/__pycache__
+**/node_modules
+frontend/dist
+*.sqlite3

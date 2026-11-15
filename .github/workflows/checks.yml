@@ -1,0 +1,32 @@
+name: ERP checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: erp_tests
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: erp_tests
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp_tests -d erp_tests"
+          --health-interval 5s --health-timeout 3s --health-retries 15
+    env:
+      ERP_TEST_DATABASE_URL: postgresql+psycopg2://erp_tests:test-only@localhost:5432/erp_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: pip install -r backend/requirements-test.txt
+      - run: ruff check backend tests
+      - run: ruff format --check backend tests
+      - run: python -m pytest -q
+      - run: npm ci --prefix frontend
+      - run: npm run build --prefix frontend
